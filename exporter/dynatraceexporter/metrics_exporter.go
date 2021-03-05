@@ -130,7 +130,7 @@ func (e *exporter) serializeMetrics(md pdata.Metrics) ([]string, int) {
 // An error indicates all lines were dropped regardless of the returned number.
 func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
 	message := strings.Join(lines, "\n")
-	e.logger.Debug("Sending lines to Dynatrace\n" + message)
+	e.logger.Info("Sending lines to Dynatrace\n" + message)
 	req, err := http.NewRequestWithContext(ctx, "POST", e.cfg.Endpoint, bytes.NewBufferString(message))
 	if err != nil {
 		return 0, consumererror.Permanent(err)
@@ -155,6 +155,8 @@ func (e *exporter) send(ctx context.Context, lines []string) (int, error) {
 			e.logger.Error(fmt.Sprintf("failed to read response: %s", err.Error()))
 			return 0, nil
 		}
+
+		e.logger.Info(fmt.Sprintf("Error raw response: %s", string(bodyBytes)))
 
 		responseBody := metricsResponse{}
 		if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
@@ -223,7 +225,7 @@ type metricsResponse struct {
 }
 
 type metricsResponseError struct {
-	Code         string                            `json:"code"`
+	Code         int64                            `json:"code"`
 	Message      string                            `json:"message"`
 	InvalidLines []metricsResponseErrorInvalidLine `json:"invalidLines"`
 }
